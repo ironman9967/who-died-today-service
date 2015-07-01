@@ -9,14 +9,14 @@ var __extends = this.__extends || function (d, b) {
 var _ = require('lodash');
 var ironworks = require('ironworks');
 var request = require('request');
-var DeadWorker = (function (_super) {
-    __extends(DeadWorker, _super);
-    function DeadWorker(opts) {
+var TwitchWorker = (function (_super) {
+    __extends(TwitchWorker, _super);
+    function TwitchWorker(opts) {
         _super.call(this, [
             'iw-socket'
         ], {
             id: ironworks.helpers.idHelper.newId(),
-            name: 'dead-worker'
+            name: 'twitch-worker'
         });
         var defOpts = {
             max: 300,
@@ -26,40 +26,49 @@ var DeadWorker = (function (_super) {
         this.opts.merge(opts);
         this.streams = [];
     }
-    DeadWorker.prototype.init = function (comm, whoService, cb) {
+    TwitchWorker.prototype.init = function (comm, whoService, cb) {
         this.setComm(comm, whoService);
         var instance = this;
-        DeadWorker.download(this.opts.get('max'), function (streams) {
+        TwitchWorker.download(this.opts.get('max'), function (streams) {
             instance.streams = streams;
-            instance.respond('dead', function (req, respond) {
-                if (_.isUndefined(req.offset)) {
-                    req.offset = 0;
-                }
-                if (_.isUndefined(req.offset)) {
-                    req.limit = 5;
-                }
-                if (req.offset > instance.streams.length) {
-                    respond(new Error("only have " + instance.streams.length + " streams."));
-                }
-                else {
-                    respond(null, _.take(instance.streams.slice(req.offset), req.limit));
-                }
+            instance.respond('get-streams', function (req, respond) {
+                instance.getStreams(req, respond);
+            });
+            instance.answer('stream-count', function (cb) {
+                instance.streamCount(cb);
             });
             cb(null);
         });
     };
-    DeadWorker.prototype.update = function () {
+    TwitchWorker.prototype.getStreams = function (req, cb) {
+        if (_.isUndefined(req.offset)) {
+            req.offset = 0;
+        }
+        if (_.isUndefined(req.offset)) {
+            req.limit = 5;
+        }
+        if (req.offset > this.streams.length) {
+            cb(new Error("only have " + this.streams.length + " streams."));
+        }
+        else {
+            cb(null, _.take(this.streams.slice(req.offset), req.limit));
+        }
+    };
+    TwitchWorker.prototype.streamCount = function (cb) {
+        cb(null, this.streams.length);
+    };
+    TwitchWorker.prototype.update = function () {
         var max = this.opts.get('max');
         var updateFreq = this.opts.get('updateFreq');
         var instance = this;
-        DeadWorker.download(max, function (streams) {
+        TwitchWorker.download(max, function (streams) {
             instance.streams = streams;
             instance.updateTimeout = setTimeout(function () {
                 instance.update();
             }, updateFreq);
         });
     };
-    DeadWorker.download = function (max, cb, streams) {
+    TwitchWorker.download = function (max, cb, streams) {
         if (_.isUndefined(streams)) {
             streams = [];
         }
@@ -81,7 +90,7 @@ var DeadWorker = (function (_super) {
                 });
             });
             if (streams.length < max) {
-                DeadWorker.download(max, function (s) {
+                TwitchWorker.download(max, function (s) {
                     cb(s);
                 }, streams);
             }
@@ -90,7 +99,7 @@ var DeadWorker = (function (_super) {
             }
         });
     };
-    return DeadWorker;
+    return TwitchWorker;
 })(ironworks.workers.Worker);
-module.exports = DeadWorker;
-//# sourceMappingURL=dead-worker.js.map
+module.exports = TwitchWorker;
+//# sourceMappingURL=twitch-worker.js.map

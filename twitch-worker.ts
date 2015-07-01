@@ -25,28 +25,28 @@ interface IStream {
     views: number;
 }
 
-interface IDeadWorkerOpts {
+interface ITwitchWorkerOpts {
     max: number;
     updateFreq: number;
 }
 
-class DeadWorker extends ironworks.workers.Worker {
+class TwitchWorker extends ironworks.workers.Worker {
     private updateTimeout: number;
     private streams: IStream[];
 
-    constructor(opts?: IDeadWorkerOpts) {
+    constructor(opts?: ITwitchWorkerOpts) {
         super([
             'iw-socket'
         ], {
             id: ironworks.helpers.idHelper.newId(),
-            name: 'dead-worker'
+            name: 'twitch-worker'
         });
 
-        var defOpts: IDeadWorkerOpts = {
+        var defOpts: ITwitchWorkerOpts = {
             max: 300,
             updateFreq: 60 * 60 * 1000
         };
-        this.opts = this.opts.beAdoptedBy<IDeadWorkerOpts>(defOpts, 'worker');
+        this.opts = this.opts.beAdoptedBy<ITwitchWorkerOpts>(defOpts, 'worker');
         this.opts.merge(opts);
 
         this.streams = [];
@@ -55,31 +55,42 @@ class DeadWorker extends ironworks.workers.Worker {
     public init(comm, whoService, cb) {
         this.setComm(comm, whoService);
         var instance = this;
-        DeadWorker.download(this.opts.get<number>('max'), (streams) => {
+        TwitchWorker.download(this.opts.get<number>('max'), (streams) => {
             instance.streams = streams;
-            instance.respond<IStreamRequest, IStream[]>('dead', (req, respond) => {
-                if (_.isUndefined(req.offset)) {
-                    req.offset = 0;
-                }
-                if (_.isUndefined(req.offset)) {
-                    req.limit = 5;
-                }
-                if (req.offset > instance.streams.length) {
-                    respond(new Error("only have " + instance.streams.length + " streams."));
-                }
-                else {
-                    respond(null, _.take(instance.streams.slice(req.offset), req.limit));
-                }
+            instance.respond<IStreamRequest, IStream[]>('get-streams', (req, respond) => {
+                instance.getStreams(req, respond);
+            });
+            instance.answer('stream-count', (cb) => {
+                instance.streamCount(cb);
             });
             cb(null);
         });
+    }
+
+    private getStreams(req: IStreamRequest, cb: (e: Error, results?: IStream[]) => void) {
+        if (_.isUndefined(req.offset)) {
+            req.offset = 0;
+        }
+        if (_.isUndefined(req.offset)) {
+            req.limit = 5;
+        }
+        if (req.offset > this.streams.length) {
+            cb(new Error("only have " + this.streams.length + " streams."));
+        }
+        else {
+            cb(null, _.take(this.streams.slice(req.offset), req.limit));
+        }
+    }
+
+    private streamCount(cb: (e: Error, count: number) => void) {
+        cb(null, this.streams.length);
     }
 
     private update() {
         var max = this.opts.get<number>('max');
         var updateFreq = this.opts.get('updateFreq');
         var instance = this;
-        DeadWorker.download(max, (streams) => {
+        TwitchWorker.download(max, (streams) => {
             instance.streams = streams;
             instance.updateTimeout = setTimeout(() => {
                 instance.update();
@@ -109,7 +120,7 @@ class DeadWorker extends ironworks.workers.Worker {
                 });
             });
             if (streams.length < max) {
-                DeadWorker.download(max, (s) => {
+                TwitchWorker.download(max, (s) => {
                     cb(s)
                 }, streams);
             }
@@ -120,4 +131,4 @@ class DeadWorker extends ironworks.workers.Worker {
     }
 }
 
-export = DeadWorker;
+export = TwitchWorker;
