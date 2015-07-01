@@ -12,7 +12,7 @@ if (_.isUndefined(process.env['VCAP_SERVICES'])) {
 }
 
 if (_.isUndefined(process.env['VCAP_APP_PORT'])) {
-    process.env.VCAP_APP_PORT = 8080;
+    process.env.VCAP_APP_PORT = 8082;
 }
 
 var s = new ironworks.service.Service('twitch-service')
@@ -23,6 +23,8 @@ var s = new ironworks.service.Service('twitch-service')
     .use(new ironworks.workers.CfClientWorker())
     .use(new ironworks.workers.LogWorker())
     .use(new TwitchWorker());
+
+
 s.info<Error>('error', (e: Error) => {
         console.error(e);
     })

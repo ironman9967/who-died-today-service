@@ -1,0 +1,6 @@
+---
+applications:
+- name: iw-twitch-service
+  memory: 512M
+  instances: 1
+  random-route: true
