@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "iw-twitchy-interface": "git+https://github.com/YurikoEX/iw-twitchy-interface.git",
     "lodash": "^3.10.0",
     "request": "^2.58.0"
   },

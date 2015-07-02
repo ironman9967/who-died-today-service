@@ -1,6 +1,6 @@
 
 node_modules/
-
+bower_components/
 who-dies-today-service.iws
 
 .idea/workspace.xml

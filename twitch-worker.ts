@@ -3,27 +3,10 @@
 ///<reference path='./typings/request/request.d.ts' />
 
 import _ = require('lodash');
-
+import IStream = require('./node_modules/iw-twitchy-interface/IStream');
+import IStreamRequest = require('./node_modules/iw-twitchy-interface/IStreamRequest');
 import ironworks = require('ironworks');
 import request = require('request');
-
-interface IStreamRequest {
-    limit: number;
-    offset?: number;
-}
-
-interface IStream {
-    id: number;
-    game: string;
-    viewers: number;
-    preview: string;
-    displayName: string;
-    logo: string;
-    statusMessage: string;
-    url: string;
-    followers: number;
-    views: number;
-}
 
 interface ITwitchWorkerOpts {
     max: number;
